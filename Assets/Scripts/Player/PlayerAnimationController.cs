@@ -6,19 +6,39 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerInputReader inputReader;
+    [SerializeField] private PlayerCombat playerCombat;
+    [SerializeField] private PlayerHealth playerHealth;
 
     [Header("Animation Damping")]
-    [SerializeField] private float inputDampTime;
+    [SerializeField] private float inputDampTime = 0.1f;
 
     private void Update()
     {
-        Debug.Log("IsCrouched: " + playerMovement.GetIsCrouching());
+        if (playerCombat.GetIsExecuting())
+        {
+            ForceIdleLocomotion();
+            return;
+        }
+
+        if (playerHealth.GetIsDead())
+        {
+            ForceIdleLocomotion();
+            return;
+        }
+
         Vector2 moveInput = inputReader.GetMoveInput();
-        Debug.Log("MoveX: " + moveInput.x + " MoveY: " + moveInput.y);
-        
+
         animator.SetFloat("MoveX", moveInput.x, inputDampTime, Time.deltaTime);
         animator.SetFloat("MoveY", moveInput.y, inputDampTime, Time.deltaTime);
         animator.SetBool("IsRunning", playerMovement.GetIsRunning());
         animator.SetBool("IsCrouching", playerMovement.GetIsCrouching());
+    }
+
+    private void ForceIdleLocomotion()
+    {
+        animator.SetFloat("MoveX", 0f);
+        animator.SetFloat("MoveY", 0f);
+        animator.SetBool("IsRunning", false);
+        animator.SetBool("IsCrouching", false);
     }
 }

@@ -1,18 +1,15 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
-[RequireComponent(typeof(PlayerInputReader))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Transform visuals;
     [SerializeField] private Camera playerCamera;
 
     [Header("Movement")]
     [SerializeField] private float walkSpeed;
     [SerializeField] private float runSpeed;
     [SerializeField] private float crouchSpeed;
-    [SerializeField] private float sidewaysAndBackwardsMultiplier = 0.75f;
+    [SerializeField] private float sidewaysAndBackwardsMultiplier;
     [SerializeField] private float movementSmoothFactor;
     [SerializeField] private float rotationSmoothFactor;
 
@@ -27,6 +24,7 @@ public class PlayerMovement : MonoBehaviour
 
     private CharacterController controller;
     private PlayerInputReader inputReader;
+    private PlayerAudio playerAudio;
 
     private Vector2 inputVector;
     private Vector3 horizontalMovement;
@@ -39,27 +37,52 @@ public class PlayerMovement : MonoBehaviour
     private float rotationVelocity;
 
     private bool isGrounded;
+    private bool movementLocked;
+    private bool rotationLocked;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         inputReader = GetComponent<PlayerInputReader>();
+        playerAudio = GetComponent<PlayerAudio>();
     }
 
     private void Update()
     {
+        if (controller == null || !controller.enabled)
+        {
+            return;
+        }
+
         GroundCheck();
         ApplyGravity();
         MoveAndRotate();
+        UpdateFootsteps();
     }
 
     private void MoveAndRotate()
     {
         inputVector = inputReader.GetMoveInput();
 
+        if (movementLocked)
+        {
+            targetSpeed = 0f;
+            currentSpeed = Mathf.SmoothDamp(currentSpeed, targetSpeed, ref speedVelocity, movementSmoothFactor);
+            horizontalMovement = Vector3.zero;
+
+            if (!rotationLocked)
+            {
+                RotateTowardsCameraForward();
+            }
+
+            totalMovement = horizontalMovement + verticalMovement;
+            controller.Move(totalMovement * Time.deltaTime);
+            return;
+        }
+
         float maxSpeed = GetCurrentMaxSpeed();
         float directionMultiplier = GetDirectionSpeedMultiplier();
-        targetSpeed = maxSpeed * inputVector.magnitude *directionMultiplier;
+        targetSpeed = maxSpeed * inputVector.magnitude * directionMultiplier;
 
         currentSpeed = Mathf.SmoothDamp(currentSpeed, targetSpeed, ref speedVelocity, movementSmoothFactor);
 
@@ -74,7 +97,10 @@ public class PlayerMovement : MonoBehaviour
 
         horizontalMovement = (cameraForward * inputVector.y + cameraRight * inputVector.x) * currentSpeed;
 
-        RotateTowardsCameraForward();
+        if (!rotationLocked)
+        {
+            RotateTowardsCameraForward();
+        }
 
         totalMovement = horizontalMovement + verticalMovement;
         controller.Move(totalMovement * Time.deltaTime);
@@ -91,10 +117,14 @@ public class PlayerMovement : MonoBehaviour
         }
 
         float targetAngle = Quaternion.LookRotation(lookDirection).eulerAngles.y;
+        float smoothAngle = Mathf.SmoothDampAngle(
+            transform.eulerAngles.y,
+            targetAngle,
+            ref rotationVelocity,
+            rotationSmoothFactor
+        );
 
-        float smoothAngle = Mathf.SmoothDampAngle(visuals.eulerAngles.y, targetAngle, ref rotationVelocity, rotationSmoothFactor);
-        visuals.rotation = Quaternion.Euler(0f, smoothAngle, 0f);
-
+        transform.rotation = Quaternion.Euler(0f, smoothAngle, 0f);
     }
 
     private void ApplyGravity()
@@ -116,19 +146,20 @@ public class PlayerMovement : MonoBehaviour
 
     private float GetCurrentMaxSpeed()
     {
-        if (inputReader.GetIsCrouchPressed())
-        {
-            return crouchSpeed;
-        }
+        MovementMode currentMode = inputReader.GetCurrentMovementMode();
 
-        if (inputReader.GetIsRunPressed())
+        switch (currentMode)
         {
-            return runSpeed;
+            case MovementMode.Crouch:
+                return crouchSpeed;
+            case MovementMode.Run:
+                return runSpeed;
+            case MovementMode.Walk:
+            default:
+                return walkSpeed;
         }
-
-        return walkSpeed;
     }
-    
+
     private float GetDirectionSpeedMultiplier()
     {
         bool isMovingSideways = Mathf.Abs(inputVector.x) > 0.01f;
@@ -142,29 +173,82 @@ public class PlayerMovement : MonoBehaviour
         return 1f;
     }
 
-    public float GetCurrentHorizontalSpeed()
+    private void UpdateFootsteps()
     {
-        Vector3 horizontalVelocity = new Vector3(horizontalMovement.x, 0f, horizontalMovement.z);
-        return horizontalVelocity.magnitude;
+        if (playerAudio == null)
+        {
+            return;
+        }
+
+        bool shouldPlayFootsteps = GetIsMoving() && isGrounded && !movementLocked;
+
+        if (!shouldPlayFootsteps)
+        {
+            playerAudio.StopFootsteps();
+            return;
+        }
+
+        if (GetIsCrouching())
+        {
+            playerAudio.StartFootsteps(playerAudio.GetCrouchPitch());
+        }
+        else if (GetIsRunning())
+        {
+            playerAudio.StartFootsteps(playerAudio.GetRunPitch());
+        }
+        else
+        {
+            playerAudio.StartFootsteps(playerAudio.GetWalkPitch());
+        }
+    }
+
+    public void SetMovementLocked(bool isLocked)
+    {
+        movementLocked = isLocked;
+    }
+
+    public void SetRotationLocked(bool isLocked)
+    {
+        rotationLocked = isLocked;
+    }
+
+    public bool GetIsMovementLocked()
+    {
+        return movementLocked;
+    }
+
+    public bool GetIsRotationLocked()
+    {
+        return rotationLocked;
     }
 
     public bool GetIsMoving()
     {
-        return inputVector.sqrMagnitude > 0.001f;
+        return inputVector.sqrMagnitude > 0.001f && !movementLocked;
     }
 
     public bool GetIsCrouching()
     {
-        return inputReader.GetIsCrouchPressed();
+        return inputReader.GetCurrentMovementMode() == MovementMode.Crouch;
     }
 
     public bool GetIsRunning()
     {
-        return inputReader.GetIsRunPressed() && !inputReader.GetIsCrouchPressed() && GetIsMoving();
+        return inputReader.GetCurrentMovementMode() == MovementMode.Run && GetIsMoving();
+    }
+
+    public int GetCurrentMovementModeIndex()
+    {
+        return (int)inputReader.GetCurrentMovementMode();
     }
 
     private void OnDrawGizmosSelected()
     {
+        if (feet == null)
+        {
+            return;
+        }
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(feet.position, detectionRadius);
     }

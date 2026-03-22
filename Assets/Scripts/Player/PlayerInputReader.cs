@@ -1,16 +1,16 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(PlayerInput))]
 public class PlayerInputReader : MonoBehaviour
 {
     private PlayerInput input;
 
     private Vector2 moveInput;
-    private bool isRunPressed;
-    private bool isCrouchPressed;
     private bool attackPressedThisFrame;
     private bool throwPressedThisFrame;
+    private bool pausePressedThisFrame;
+
+    private MovementMode currentMovementMode = MovementMode.Walk;
 
     private void Awake()
     {
@@ -22,14 +22,12 @@ public class PlayerInputReader : MonoBehaviour
         input.actions["Move"].performed += OnMovePerformed;
         input.actions["Move"].canceled += OnMovePerformed;
 
-        input.actions["Run"].started += OnRunStarted;
-        input.actions["Run"].canceled += OnRunCanceled;
-
-        input.actions["Crouch"].started += OnCrouchStarted;
-        input.actions["Crouch"].canceled += OnCrouchCanceled;
+        input.actions["Run"].performed += OnRunPerformed;
+        input.actions["Walk"].performed += OnWalkPerformed;
+        input.actions["Crouch"].performed += OnCrouchPerformed;
 
         input.actions["Attack"].performed += OnAttackPerformed;
-        input.actions["Throw"].performed += OnThrowPerformed;
+        input.actions["Pause"].performed += OnPausePerformed;
     }
 
     private void OnDisable()
@@ -37,14 +35,19 @@ public class PlayerInputReader : MonoBehaviour
         input.actions["Move"].performed -= OnMovePerformed;
         input.actions["Move"].canceled -= OnMovePerformed;
 
-        input.actions["Run"].started -= OnRunStarted;
-        input.actions["Run"].canceled -= OnRunCanceled;
-
-        input.actions["Crouch"].started -= OnCrouchStarted;
-        input.actions["Crouch"].canceled -= OnCrouchCanceled;
+        input.actions["Run"].performed -= OnRunPerformed;
+        input.actions["Walk"].performed -= OnWalkPerformed;
+        input.actions["Crouch"].performed -= OnCrouchPerformed;
 
         input.actions["Attack"].performed -= OnAttackPerformed;
-        input.actions["Throw"].performed -= OnThrowPerformed;
+        input.actions["Pause"].performed -= OnPausePerformed;
+    }
+
+    private void LateUpdate()
+    {
+        attackPressedThisFrame = false;
+        throwPressedThisFrame = false;
+        pausePressedThisFrame = false;
     }
 
     private void OnMovePerformed(InputAction.CallbackContext context)
@@ -52,24 +55,19 @@ public class PlayerInputReader : MonoBehaviour
         moveInput = context.ReadValue<Vector2>();
     }
 
-    private void OnRunStarted(InputAction.CallbackContext context)
+    private void OnRunPerformed(InputAction.CallbackContext context)
     {
-        isRunPressed = true;
+        currentMovementMode = MovementMode.Run;
     }
 
-    private void OnRunCanceled(InputAction.CallbackContext context)
+    private void OnWalkPerformed(InputAction.CallbackContext context)
     {
-        isRunPressed = false;
+        currentMovementMode = MovementMode.Walk;
     }
 
-    private void OnCrouchStarted(InputAction.CallbackContext context)
+    private void OnCrouchPerformed(InputAction.CallbackContext context)
     {
-        isCrouchPressed = true;
-    }
-
-    private void OnCrouchCanceled(InputAction.CallbackContext context)
-    {
-        isCrouchPressed = false;
+        currentMovementMode = MovementMode.Crouch;
     }
 
     private void OnAttackPerformed(InputAction.CallbackContext context)
@@ -82,10 +80,9 @@ public class PlayerInputReader : MonoBehaviour
         throwPressedThisFrame = true;
     }
 
-    private void LateUpdate()
+    private void OnPausePerformed(InputAction.CallbackContext context)
     {
-        attackPressedThisFrame = false;
-        throwPressedThisFrame = false;
+        pausePressedThisFrame = true;
     }
 
     public Vector2 GetMoveInput()
@@ -93,14 +90,9 @@ public class PlayerInputReader : MonoBehaviour
         return moveInput;
     }
 
-    public bool GetIsRunPressed()
+    public MovementMode GetCurrentMovementMode()
     {
-        return isRunPressed;
-    }
-
-    public bool GetIsCrouchPressed()
-    {
-        return isCrouchPressed;
+        return currentMovementMode;
     }
 
     public bool GetAttackPressedThisFrame()
@@ -108,8 +100,8 @@ public class PlayerInputReader : MonoBehaviour
         return attackPressedThisFrame;
     }
 
-    public bool GetThrowPressedThisFrame()
+    public bool GetPausePressedThisFrame()
     {
-        return throwPressedThisFrame;
+        return pausePressedThisFrame;
     }
 }

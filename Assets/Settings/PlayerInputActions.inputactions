@@ -25,6 +25,15 @@
                     "initialStateCheck": true
                 },
                 {
+                    "name": "Walk",
+                    "type": "Button",
+                    "id": "4e5fc9c1-b115-4971-a793-49c852a9a8fa",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Run",
                     "type": "Button",
                     "id": "3652b0a4-9b6c-4726-9fe3-2f805dc95445",
@@ -52,9 +61,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Throw",
+                    "name": "Pause",
                     "type": "Button",
-                    "id": "fe01fdf0-05e6-4711-9267-b251b7ae3810",
+                    "id": "a86c29f6-f04d-412b-a038-c8909cb0e04d",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -175,7 +184,7 @@
                 {
                     "name": "",
                     "id": "6a418187-9d94-4d31-a487-c43e9e3ceb7f",
-                    "path": "<Keyboard>/leftShift",
+                    "path": "<Keyboard>/3",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -186,7 +195,7 @@
                 {
                     "name": "",
                     "id": "ed7fb791-bf39-4454-86ca-2e601e95cdb4",
-                    "path": "<Keyboard>/leftCtrl",
+                    "path": "<Keyboard>/1",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -202,17 +211,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "Attack",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "76d03bde-7341-4e0d-b377-f9701023fb9a",
-                    "path": "<Keyboard>/q",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Throw",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -235,6 +233,39 @@
                     "processors": "",
                     "groups": "",
                     "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "452de96f-9ff1-489c-8777-bab910b2bd6f",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Walk",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "28006893-b335-4f93-9ec9-c5aa94c2ff93",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7e1966c6-3d27-4b46-9156-2d26a3ccd34b",
+                    "path": "<Keyboard>/p",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Pause",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
